@@ -27,9 +27,10 @@ var RecipeCell = React.createClass({
               <Text style={styles.recipeTitle} numberOfLines={2}>
                 {this.props.recipe.name}
               </Text>
-              <Text style={styles.recipeServings} numberOfLines={1}>
-                {this.props.recipe.number_of_servings}
+              <Text style={styles.recipeDetails} numberOfLines={1}>
+                Serves: {this.props.recipe.number_of_servings}
                 {' '}&bull;{' '}
+                Prep Time: {this.props.recipe.prep_time_in_minutes} min
               </Text>
             </View>
           </View>
@@ -49,7 +50,7 @@ var styles = StyleSheet.create({
     fontWeight: '500',
     marginBottom: 2,
   },
-  recipeServings: {
+  recipeDetails: {
     color: '#999999',
     fontSize: 12,
   },

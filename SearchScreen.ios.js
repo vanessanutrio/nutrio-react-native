@@ -13,6 +13,7 @@ var API_KEY = '01e4db4b-f6f3-43f5-91d1-e3818fc9d3e9';
 
 var SearchBar = require('./SearchBar');
 var RecipeCell = require('./RecipeCell');
+var RecipeScreen = require('./RecipeScreen');
 
 var LOADING = {};
 
@@ -54,6 +55,15 @@ var SearchScreen = React.createClass({
   getDataSource: function(recipes: Array<any>): ListView.DataSource {
     return this.state.dataSource.cloneWithRows(recipes);
   },
+
+  selectRecipe: function(recipe: Object) {
+    this.props.navigator.push({
+      title: recipe.name,
+      component: RecipeScreen,
+      passProps: {recipe},
+    });
+  },
+
   searchRecipesByKeyword: function(query: string) {
     this.timeoutID = null;
 
@@ -133,6 +143,7 @@ var SearchScreen = React.createClass({
     return (
       <RecipeCell
         key={recipe.id}
+        onSelect={() => this.selectRecipe(recipe)}
         onHighlight={() => highlightRowFunc(sectionID, rowID)}
         onUnhighlight={() => highlightRowFunc(null, null)}
         recipe={recipe}
