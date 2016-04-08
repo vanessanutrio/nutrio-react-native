@@ -12,7 +12,8 @@ import React, {
   View
 } from 'react-native';
 
-var SearchScreen = require('./SearchScreen');
+
+var FeaturedScreen = require('./FeaturedScreen');
 
 var nutrio = React.createClass({
   render: function() {
@@ -20,8 +21,8 @@ var nutrio = React.createClass({
       <NavigatorIOS
         style={styles.container}
         initialRoute={{
-          title: 'Recipes',
-          component: SearchScreen,
+          title: 'Home',
+          component: FeaturedScreen,
         }}
       />
     );

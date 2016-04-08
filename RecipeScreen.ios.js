@@ -69,7 +69,7 @@ var RecipeScreen = React.createClass({
 
         this.setState({
           isLoading: false,
-          recipe: responseData,
+          recipe: responseData[0].meal,
           ingredientsDataSource: this.state.ingredientsDataSource.cloneWithRows(responseData[0].recipes[0].recipe_foods),
           prepNotesDataSource: this.state.prepNotesDataSource.cloneWithRows(responseData[0].recipes[0].prep_notes),
           nutrientsDataSource: this.state.nutrientsDataSource.cloneWithRows(responseData[0].meal.meal_nutrients),
@@ -84,9 +84,17 @@ var RecipeScreen = React.createClass({
     this.searchRecipe()
   },
 
+  _getImage: function(recipe){
+    if(recipe.images){
+      return  'http://demo.nutrio.com'+recipe.images[0].url;
+    }else{
+      return 'http://www.stcolumbasevents.org/wp-content/uploads/2016/02/meal-icon-white.png';
+    }
+  },
 
   render: function() {
-    
+    var entities = require('entities')
+
     return (
       <ScrollView contentContainerStyle={styles.contentContainer}>
         <View style={styles.mainSection}>
@@ -95,13 +103,14 @@ var RecipeScreen = React.createClass({
             * even if it isn't required */}
           <View style={styles.rightPane}>
             <Text style={styles.recipeName}>{this.props.recipe.name}</Text>
-            <Text>Serves: {this.props.recipe.number_of_servings}</Text>
+            <Image style={styles.detailsImage} source={{uri:this._getImage(this.props.recipe)}}/>
+            <Text>Serves: {this.props.recipe.number_of_servings || this.state.recipe.number_of_servings}</Text>
             <View>
               <Text>
-                Prep Time: {this.props.recipe.prep_time_in_minutes}
+                Prep Time: {this.props.recipe.prep_time_in_minutes || this.state.recipe.prep_time_in_minutes} min
               </Text>
               <Text>
-                Total Time: {this.props.recipe.total_time_in_minutes}
+                Total Time: {this.props.recipe.total_time_in_minutes || this.state.recipe.total_time_in_minutes} min
               </Text>
               <View style={styles.separator} />
               <Text style={styles.recipeDetails}>Ingredients:</Text>
@@ -117,7 +126,7 @@ var RecipeScreen = React.createClass({
               <Text style={styles.recipeDetails}>Preparation Notes:</Text>
               <ListView
                 dataSource={this.state.prepNotesDataSource}
-                renderRow={(rowData) => <Text>{rowData.action}</Text>}
+                renderRow={(rowData) => <Text>{entities.decodeHTML(rowData.action)}</Text>}
                 automaticallyAdjustContentInsets={false}
                 keyboardDismissMode="on-drag"
                 keyboardShouldPersistTaps={true}
@@ -177,8 +186,7 @@ var styles = StyleSheet.create({
     flexDirection: 'row',
   },
   detailsImage: {
-    width: 134,
-    height: 200,
+    height: 130,
     backgroundColor: '#eaeaea',
     marginRight: 10,
   },

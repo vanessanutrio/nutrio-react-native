@@ -1,8 +1,10 @@
 import React, {
   ActivityIndicatorIOS,
   ListView,
+  Image,
   Platform,
   StyleSheet,
+  TouchableHighlight,
   Text,
   View,
 } from 'react-native';
@@ -28,8 +30,14 @@ var SearchScreen = React.createClass({
       dataSource: new ListView.DataSource({
         rowHasChanged: (row1, row2) => row1 !== row2,
       }),
-      filter: '',
+      featuredDataSource: new ListView.DataSource({
+        rowHasChanged: (row1, row2) => row1 !== row2,
+      }),
+      term: '',
       queryNumber: 0,
+      pageNumber: 1,
+      pageSize: 20,
+      totalRecords: 0
     };
   },
 
@@ -75,11 +83,12 @@ var SearchScreen = React.createClass({
       isLoading: true,
       queryNumber: this.state.queryNumber + 1,
       isLoadingTail: false,
+      term: query
     });
     
     var endpoint = this._urlForQueryAndPage(query, 1)
 
-    console.log("fetching: "+query);
+    console.log("fetching: "+query+" page:"+this.state.pageNumber);
 
     fetch('https://api.nutrio.com/api/v5/search/recipes_by_keywords',{
       method: 'POST',
@@ -89,7 +98,9 @@ var SearchScreen = React.createClass({
         'Authorization': 'Basic ' + btoa('not_needed:01e4db4b-f6f3-43f5-91d1-e3818fc9d3e9'),
       },
       body: JSON.stringify({
-        term: query
+        term: query,
+        page_size: this.state.pageSize,
+        page_number: this.state.pageNumber,
       })
     })
       .then((response) => response.json())
@@ -114,11 +125,81 @@ var SearchScreen = React.createClass({
         this.setState({
           isLoading: false,
           dataSource: this.getDataSource(responseData.meals),
+          pageSize: responseData.page_size,
+          pageNumber: responseData.page_number,
+          totalRecords: responseData.total_records,
+          term: responseData.term,
         });
       })
       .done();
   },
 
+  hasMore: function(): boolean {
+    return this.state.totalRecords > (this.state.pageNumber * this.state.pageSize)
+  },
+
+  onEndReached: function() {
+    console.log("onEndReached");
+    var query = this.state.term;
+    if (!this.hasMore() || this.state.isLoadingTail) {
+      // We're already fetching or have all the elements so noop
+      return;
+    }
+
+    if (LOADING[query]) {
+      return;
+    }
+
+    LOADING[query] = true;
+    this.setState({
+      queryNumber: this.state.queryNumber + 1,
+      isLoadingTail: true,
+      pageNumber: this.state.pageNumber  + 1
+    });
+
+    console.log("onEndReached fetching"+this.state.pageNumber);
+
+    fetch('https://api.nutrio.com/api/v5/search/recipes_by_keywords',{
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'Authorization': 'Basic ' + btoa('not_needed:01e4db4b-f6f3-43f5-91d1-e3818fc9d3e9'),
+      },
+      body: JSON.stringify({
+        term: query,
+        page_size: this.state.pageSize,
+        page_number: this.state.pageNumber,
+      })
+    })
+      .then((response) => response.json())
+      .catch((error) => {
+        console.error(error);
+        LOADING[query] = false;
+        this.setState({
+          isLoadingTail: false,
+        });
+      })
+      .then((responseData) => {
+        console.log('onEndReached response:'+responseData.meals)
+        LOADING[query] = false;
+
+        if (this.state.filter !== query) {
+          // do not update state if the query is stale
+          return;
+        }
+
+        this.setState({
+          isLoading: false,
+          dataSource: this.getDataSource(responseData.meals),
+          pageSize: responseData.page_size,
+          pageNumber: responseData.page_number,
+          totalRecords: responseData.total_records,
+          term: responseData.term,
+        });
+      })
+      .done();
+  },
 
   renderSeparator: function(
     sectionID: number | string,
@@ -150,6 +231,7 @@ var SearchScreen = React.createClass({
       />
     );
   },
+
   render: function() {
     var content = this.state.dataSource.getRowCount() === 0 ?
       <NoRecipes
@@ -161,6 +243,7 @@ var SearchScreen = React.createClass({
         renderSeparator={this.renderSeparator}
         dataSource={this.state.dataSource}
         renderRow={this.renderRow}
+        //onEndReached={this.onEndReached}
         automaticallyAdjustContentInsets={false}
         keyboardDismissMode="on-drag"
         keyboardShouldPersistTaps={true}
@@ -177,6 +260,7 @@ var SearchScreen = React.createClass({
         />
         <View style={styles.separator} />
           {content}
+        <View style={styles.separator} />
       </View>
     );
   },
@@ -228,6 +312,18 @@ var styles = StyleSheet.create({
   rowSeparatorHide: {
     opacity: 0.0,
   },
+  detailsImage: {
+    height: 90,
+    backgroundColor: '#eaeaea',
+    marginRight: 10,
+  },
+  headline: {
+    fontSize: 20,
+    fontWeight: '600',
+    textAlign: 'center',
+    backgroundColor: 'rgba(0,0,0,0)', 
+    color: 'white'  
+  }
 });
 
 module.exports = SearchScreen;
