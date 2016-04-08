@@ -12,6 +12,7 @@ var API_URL = 'http://api.nutrio.com/api';
 var API_KEY = '01e4db4b-f6f3-43f5-91d1-e3818fc9d3e9';
 
 var SearchBar = require('./SearchBar');
+var RecipeCell = require('./RecipeCell');
 
 var LOADING = {};
 
@@ -108,7 +109,53 @@ var SearchScreen = React.createClass({
       .done();
   },
 
+
+  renderSeparator: function(
+    sectionID: number | string,
+    rowID: number | string,
+    adjacentRowHighlighted: boolean
+  ) {
+    var style = styles.rowSeparator;
+    if (adjacentRowHighlighted) {
+        style = [style, styles.rowSeparatorHide];
+    }
+    return (
+      <View key={'SEP_' + sectionID + '_' + rowID}  style={style}/>
+    );
+  },
+
+  renderRow: function(
+    recipe: Object,
+    sectionID: number | string,
+    rowID: number | string,
+    highlightRowFunc: (sectionID: ?number | string, rowID: ?number | string) => void,
+  ) {
+    return (
+      <RecipeCell
+        key={recipe.id}
+        onHighlight={() => highlightRowFunc(sectionID, rowID)}
+        onUnhighlight={() => highlightRowFunc(null, null)}
+        recipe={recipe}
+      />
+    );
+  },
   render: function() {
+    var content = this.state.dataSource.getRowCount() === 0 ?
+      <NoRecipes
+        filter={this.state.filter}
+        isLoading={this.state.isLoading}
+      /> :
+      <ListView
+        ref="listview"
+        renderSeparator={this.renderSeparator}
+        dataSource={this.state.dataSource}
+        renderRow={this.renderRow}
+        automaticallyAdjustContentInsets={false}
+        keyboardDismissMode="on-drag"
+        keyboardShouldPersistTaps={true}
+        showsVerticalScrollIndicator={false}
+      />;
+
     return (
       <View style={styles.container}>
         <SearchBar
@@ -118,10 +165,7 @@ var SearchScreen = React.createClass({
             this.refs.listview && this.refs.listview.getScrollResponder().scrollTo({ x: 0, y: 0 })}
         />
         <View style={styles.separator} />
-          <NoRecipes
-            filter={this.state.filter}
-            isLoading={this.state.isLoading}
-          />
+          {content}
       </View>
     );
   },
