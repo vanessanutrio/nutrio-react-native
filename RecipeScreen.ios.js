@@ -1,5 +1,6 @@
 import React, {
   Image,
+  ListView,
   ScrollView,
   StyleSheet,
   Text,
@@ -7,8 +8,85 @@ import React, {
 } from 'react-native';
 
 
+var API_URL = 'http://api.nutrio.com/api';
+var API_KEY = '01e4db4b-f6f3-43f5-91d1-e3818fc9d3e9';
+
+var LOADING = {};
+
 var RecipeScreen = React.createClass({
+
+  timeoutID: (null: any),
+
+  getInitialState: function() {
+
+    return {
+      isLoading: false,
+      isLoadingTail: false,
+      recipe: this.props.recipe,
+      ingredientsDataSource: new ListView.DataSource({
+        rowHasChanged: (row1, row2) => row1 !== row2,
+      }),
+      prepNotesDataSource: new ListView.DataSource({
+        rowHasChanged: (row1, row2) => row1 !== row2,
+      }),
+      nutrientsDataSource: new ListView.DataSource({
+        rowHasChanged: (row1, row2) => row1 !== row2,
+      }),
+    };
+  },
+
+  searchRecipe: function() {
+    this.timeoutID = null;
+
+    LOADING[this.props.recipe.guid] = true;
+
+    this.setState({
+      isLoading: true,
+      isLoadingTail: false,
+    });
+
+    console.log("fetching: "+this.props.recipe.guid);
+
+    fetch('https://api.nutrio.com/api/v3/meals?guid='+this.props.recipe.guid,{
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'Authorization': 'Basic ' + btoa('not_needed:01e4db4b-f6f3-43f5-91d1-e3818fc9d3e9'),
+      }
+    })
+      .then((response) => response.json())
+      .catch((error) => {
+        console.warn('error: '+error);
+        LOADING[this.props.recipe.guid] = false;
+
+        this.setState({
+          recipe: this.props.recipe,
+          isLoading: false,
+        });
+      })
+      .then((responseData) => {
+        LOADING[this.props.recipe.guid] = false;
+
+        this.setState({
+          isLoading: false,
+          recipe: responseData,
+          ingredientsDataSource: this.state.ingredientsDataSource.cloneWithRows(responseData[0].recipes[0].recipe_foods),
+          prepNotesDataSource: this.state.prepNotesDataSource.cloneWithRows(responseData[0].recipes[0].prep_notes),
+          nutrientsDataSource: this.state.nutrientsDataSource.cloneWithRows(responseData[0].meal.meal_nutrients),
+
+        });
+      })
+      .done();
+  },
+
+
+  componentDidMount: function(){
+    this.searchRecipe()
+  },
+
+
   render: function() {
+    
     return (
       <ScrollView contentContainerStyle={styles.contentContainer}>
         <View style={styles.mainSection}>
@@ -25,6 +103,26 @@ var RecipeScreen = React.createClass({
               <Text>
                 Total Time: {this.props.recipe.total_time_in_minutes}
               </Text>
+              <View style={styles.separator} />
+              <Text style={styles.recipeDetails}>Ingredients:</Text>
+              <ListView
+                dataSource={this.state.ingredientsDataSource}
+                renderRow={(rowData) => <Text>{rowData.amount} {rowData.food.name}</Text>}
+                automaticallyAdjustContentInsets={false}
+                keyboardDismissMode="on-drag"
+                keyboardShouldPersistTaps={true}
+                showsVerticalScrollIndicator={false}
+              />
+              <View style={styles.separator} />
+              <Text style={styles.recipeDetails}>Preparation Notes:</Text>
+              <ListView
+                dataSource={this.state.prepNotesDataSource}
+                renderRow={(rowData) => <Text>{rowData.action}</Text>}
+                automaticallyAdjustContentInsets={false}
+                keyboardDismissMode="on-drag"
+                keyboardShouldPersistTaps={true}
+                showsVerticalScrollIndicator={false}
+              />
             </View>
           </View>
         </View>
@@ -44,6 +142,11 @@ var styles = StyleSheet.create({
     flex: 1,
   },
   recipeName: {
+    flex: 1,
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  recipeDetails: {
     flex: 1,
     fontSize: 16,
     fontWeight: '500',
