@@ -12,6 +12,7 @@ var SearchBar = React.createClass({
         <TextInput
           autoCapitalize="none"
           autoCorrect={false}
+          onChange={this.props.onSearchChange}
           placeholder="Search a recipe..."
           style={styles.searchBarInput}
         />

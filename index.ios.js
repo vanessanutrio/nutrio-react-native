@@ -16,7 +16,6 @@ var SearchScreen = require('./SearchScreen');
 
 var nutrio = React.createClass({
   render: function() {
-    console.log("render");
     return (
       <NavigatorIOS
         style={styles.container}
